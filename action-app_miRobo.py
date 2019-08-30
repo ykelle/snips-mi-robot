@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from snipsTools import SnipsConfigParser
@@ -36,7 +36,7 @@ class SnipsMiRobot(object):
         hermes.publish_end_session(intent_message.session_id, "")
 
         # action code goes here...
-        print '[Received] intent: {}'.format(intent_message.intent.intent_name)
+        print('[Received] intent: {}'.format(intent_message.intent.intent_name))
 
         # if need to speak the execution result by tts
         hermes.publish_start_session_notification(intent_message.site_id, "Starte Roboter.", "")
@@ -46,7 +46,7 @@ class SnipsMiRobot(object):
     # --> Master callback function, triggered everytime an intent is recognized
     def master_intent_callback(self,hermes, intent_message):
         coming_intent = intent_message.intent.intent_name
-        if coming_intent == 'startRobo':
+        if coming_intent == 'leggodt:startRobo':
             self.startRobo_callback(hermes, intent_message)
 
         # more callback and if condition goes here...
