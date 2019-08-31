@@ -73,7 +73,25 @@ class SnipsMiRobot(object):
             # if need to speak the execution result by tts
             hermes.publish_start_session_notification(intent_message.site_id, msg, "")
 
+    def pauseRobo_callback(self, hermes, intent_message):
+        # terminate the session first if not continue
+        hermes.publish_end_session(intent_message.session_id, "")
 
+        # action code goes here...
+        print('[Received] intent: {}'.format(intent_message.intent.intent_name))
+        vac = self.getVacuum()
+        msg = None
+        try:
+            vac.pause()
+        except DeviceException as dev_ex:
+            msg = "Konnte keine Verbindung zum Roboter herstellen."
+        except:
+            msg = "Konnte keine Verbindung zum Roboter herstellen."
+
+
+        if msg is not None:
+            # if need to speak the execution result by tts
+            hermes.publish_start_session_notification(intent_message.site_id, msg, "")
 
 
     # --> Master callback function, triggered everytime an intent is recognized
@@ -83,6 +101,8 @@ class SnipsMiRobot(object):
             self.startRobo_callback(hermes, intent_message)
         if coming_intent == 'leggodt:stopRobo':
             self.stopRobo_callback(hermes, intent_message)
+        if coming_intent == 'leggodt:stopRobo':
+            self.pauseRobo_callback(hermes, intent_message)
 
 
     # --> Register callback function and start MQTT
