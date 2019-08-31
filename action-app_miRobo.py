@@ -5,6 +5,7 @@ from snipsTools import SnipsConfigParser
 from hermes_python.hermes import Hermes
 from hermes_python.ontology import *
 import io
+from miio.vacuum import Vacuum
 
 CONFIG_INI = "config.ini"
 
@@ -37,9 +38,17 @@ class SnipsMiRobot(object):
 
         # action code goes here...
         print('[Received] intent: {}'.format(intent_message.intent.intent_name))
+        vac = self.getVacuum()
+        msg = None
+        try:
+            vac.start()
+        except DeviceException as dev_ex:
+            msg = "Konnte keine Verbindung zum Roboter herstellen."
+        except:
+            msg = "Konnte keine Verbindung zum Roboter herstellen."
 
         # if need to speak the execution result by tts
-        hermes.publish_start_session_notification(intent_message.site_id, "Starte Roboter.", "")
+        # hermes.publish_start_session_notification(intent_message.site_id, "Starte Roboter.", "")
 
     # More callback function goes here...
 
@@ -55,6 +64,11 @@ class SnipsMiRobot(object):
     def start_blocking(self):
         with Hermes(MQTT_ADDR) as h:
             h.subscribe_intents(self.master_intent_callback).start()
+
+
+    def getVacuum(self):
+        return Vacuum(self.config["secret"]["ip"], self.config["secret"]["token"], 0, 0)
+
 
 if __name__ == "__main__":
     SnipsMiRobot()
