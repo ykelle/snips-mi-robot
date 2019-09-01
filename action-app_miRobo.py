@@ -16,6 +16,10 @@ MQTT_IP_ADDR = "localhost"
 MQTT_PORT = 1883
 MQTT_ADDR = "{}:{}".format(MQTT_IP_ADDR, str(MQTT_PORT))
 
+IP = None
+TOKEN = None
+VACUUM = None
+
 class SnipsMiRobot(object):
     """Class used to wrap action code with mqtt connection"""
 
@@ -25,6 +29,14 @@ class SnipsMiRobot(object):
             self.config = SnipsConfigParser.read_configuration_file(CONFIG_INI)
         except :
             self.config = None
+
+        # Get parameters
+        IP =  self.config.get("secret").get("ip")
+        TOKEN =  self.config.get("secret").get("token")
+
+        # init Vaccum
+        self.getVacuum()
+
         # start listening to MQTT
         self.start_blocking()
 
@@ -93,17 +105,87 @@ class SnipsMiRobot(object):
             # if need to speak the execution result by tts
             hermes.publish_start_session_notification(intent_message.site_id, msg, "")
 
+    def findRobo_callback(self, hermes, intent_message):
+        # terminate the session first if not continue
+        hermes.publish_end_session(intent_message.session_id, "")
+
+        # action code goes here...
+        print('[Received] intent: {}'.format(intent_message.intent.intent_name))
+        vac = self.getVacuum()
+        msg = None
+        try:
+            vac.find()
+        except DeviceException as dev_ex:
+            msg = "Konnte keine Verbindung zum Roboter herstellen."
+        except:
+            msg = "Konnte keine Verbindung zum Roboter herstellen."
+
+
+        if msg is not None:
+            # if need to speak the execution result by tts
+            hermes.publish_start_session_notification(intent_message.site_id, msg, "")
+
+    def statusRobo_callback(self, hermes, intent_message):
+        # terminate the session first if not continue
+        hermes.publish_end_session(intent_message.session_id, "")
+
+        # action code goes here...
+        print('[Received] intent: {}'.format(intent_message.intent.intent_name))
+        vac = self.getVacuum()
+        msg = None
+        try:
+            vac.status()
+        except DeviceException as dev_ex:
+            msg = "Konnte keine Verbindung zum Roboter herstellen."
+        except:
+            msg = "Konnte keine Verbindung zum Roboter herstellen."
+
+
+        if msg is not None:
+            # if need to speak the execution result by tts
+            hermes.publish_start_session_notification(intent_message.site_id, msg, "")
+
+
+    def sendRoboHome_callback(self, hermes, intent_message):
+        # terminate the session first if not continue
+        hermes.publish_end_session(intent_message.session_id, "")
+
+        # action code goes here...
+        print('[Received] intent: {}'.format(intent_message.intent.intent_name))
+        vac = self.getVacuum()
+        msg = None
+        try:
+            vac.home()
+        except DeviceException as dev_ex:
+            msg = "Konnte keine Verbindung zum Roboter herstellen."
+        except:
+            msg = "Konnte keine Verbindung zum Roboter herstellen."
+
+
+        if msg is not None:
+            # if need to speak the execution result by tts
+            hermes.publish_start_session_notification(intent_message.site_id, msg, "")
+
+
+
+
 
     # --> Master callback function, triggered everytime an intent is recognized
     def master_intent_callback(self,hermes, intent_message):
         coming_intent = intent_message.intent.intent_name
+
         if coming_intent == 'leggodt:startRobo':
             self.startRobo_callback(hermes, intent_message)
         if coming_intent == 'leggodt:stopRobo':
             self.stopRobo_callback(hermes, intent_message)
-        if coming_intent == 'leggodt:stopRobo':
+        if coming_intent == 'leggodt:pauseRobo':
             self.pauseRobo_callback(hermes, intent_message)
-
+        if coming_intent == 'leggodt:findRobo':
+            self.findRobo_callback(hermes, intent_message)
+        if coming_intent == 'leggodt:statusRobo':
+            self.statusRobo_callback(hermes, intent_message)
+        if coming_intent == 'leggodt:sendRoboHome':
+            self.sendRoboHome_callback(hermes, intent_message)
 
     # --> Register callback function and start MQTT
     def start_blocking(self):
@@ -112,7 +194,10 @@ class SnipsMiRobot(object):
 
 
     def getVacuum(self):
-        return Vacuum(self.config["secret"]["ip"], self.config["secret"]["token"], 0, 0)
+        if VACUUM is None:
+            VACUUM = Vacuum(IP, TOKEN, 0, 0)
+        return VACUUM
+
 
 
 if __name__ == "__main__":
