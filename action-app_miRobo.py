@@ -5,7 +5,7 @@ from snipsTools import SnipsConfigParser
 from hermes_python.hermes import Hermes
 from hermes_python.ontology import *
 import io
-from miio.vacuum import Vacuum
+from valetudo import Valetudo, ValetudoError, ValetudoConnectionError, ValetudoRequestError
 
 CONFIG_INI = "config.ini"
 
@@ -15,10 +15,6 @@ CONFIG_INI = "config.ini"
 MQTT_IP_ADDR = "localhost"
 MQTT_PORT = 1883
 MQTT_ADDR = "{}:{}".format(MQTT_IP_ADDR, str(MQTT_PORT))
-
-IP = None
-TOKEN = None
-VACUUM = None
 
 class SnipsMiRobot(object):
     """Class used to wrap action code with mqtt connection"""
@@ -31,11 +27,10 @@ class SnipsMiRobot(object):
             self.config = None
 
         # Get parameters
-        IP =  self.config.get("secret").get("ip")
-        TOKEN =  self.config.get("secret").get("token")
+        self.ip =  self.config.get("secret").get("ip")
 
-        # init Vaccum
-        self.getVacuum()
+        # init Vacuum
+        self.vacuum = Valetudo(ip=self.ip)
 
         # start listening to MQTT
         self.start_blocking()
@@ -49,14 +44,13 @@ class SnipsMiRobot(object):
 
         # action code goes here...
         print('[Received] intent: {}'.format(intent_message.intent.intent_name))
-        vac = self.getVacuum()
         msg = None
         try:
-            vac.start()
-        except DeviceException as dev_ex:
+            self.vacuum.start_cleaning()
+        except ValetudoConnectionError as ex:
             msg = "Konnte keine Verbindung zum Roboter herstellen."
-        except:
-            msg = "Konnte keine Verbindung zum Roboter herstellen."
+        except ValetudoRequestError:
+            msg = "Der Roboter konnte das leider nicht ausführen"
 
 
         if msg is not None:
@@ -71,15 +65,14 @@ class SnipsMiRobot(object):
 
         # action code goes here...
         print('[Received] intent: {}'.format(intent_message.intent.intent_name))
-        vac = self.getVacuum()
+
         msg = None
         try:
-            vac.stop()
-        except DeviceException as dev_ex:
+            self.vacuum.stop_cleaning()
+        except ValetudoConnectionError as ex:
             msg = "Konnte keine Verbindung zum Roboter herstellen."
-        except:
-            msg = "Konnte keine Verbindung zum Roboter herstellen."
-
+        except ValetudoRequestError:
+            msg = "Der Roboter konnte das leider nicht ausführen"
 
         if msg is not None:
             # if need to speak the execution result by tts
@@ -91,15 +84,14 @@ class SnipsMiRobot(object):
 
         # action code goes here...
         print('[Received] intent: {}'.format(intent_message.intent.intent_name))
-        vac = self.getVacuum()
+
         msg = None
         try:
-            vac.pause()
-        except DeviceException as dev_ex:
+            self.vacuum.pause_cleaning()
+        except ValetudoConnectionError as ex:
             msg = "Konnte keine Verbindung zum Roboter herstellen."
-        except:
-            msg = "Konnte keine Verbindung zum Roboter herstellen."
-
+        except ValetudoRequestError:
+            msg = "Der Roboter konnte das leider nicht ausführen"
 
         if msg is not None:
             # if need to speak the execution result by tts
@@ -111,15 +103,14 @@ class SnipsMiRobot(object):
 
         # action code goes here...
         print('[Received] intent: {}'.format(intent_message.intent.intent_name))
-        vac = self.getVacuum()
+
         msg = None
         try:
-            vac.find()
-        except DeviceException as dev_ex:
+            self.vacuum.find()
+        except ValetudoConnectionError as ex:
             msg = "Konnte keine Verbindung zum Roboter herstellen."
-        except:
-            msg = "Konnte keine Verbindung zum Roboter herstellen."
-
+        except ValetudoRequestError:
+            msg = "Der Roboter konnte das leider nicht ausführen"
 
         if msg is not None:
             # if need to speak the execution result by tts
@@ -131,15 +122,14 @@ class SnipsMiRobot(object):
 
         # action code goes here...
         print('[Received] intent: {}'.format(intent_message.intent.intent_name))
-        vac = self.getVacuum()
+
         msg = None
         try:
-            vac.status()
-        except DeviceException as dev_ex:
+            self.vacuum.get_status()
+        except ValetudoConnectionError as ex:
             msg = "Konnte keine Verbindung zum Roboter herstellen."
-        except:
-            msg = "Konnte keine Verbindung zum Roboter herstellen."
-
+        except ValetudoRequestError:
+            msg = "Der Roboter konnte das leider nicht ausführen"
 
         if msg is not None:
             # if need to speak the execution result by tts
@@ -152,23 +142,18 @@ class SnipsMiRobot(object):
 
         # action code goes here...
         print('[Received] intent: {}'.format(intent_message.intent.intent_name))
-        vac = self.getVacuum()
+
         msg = None
         try:
-            vac.home()
-        except DeviceException as dev_ex:
+            self.vacuum.send_home()
+        except ValetudoConnectionError as ex:
             msg = "Konnte keine Verbindung zum Roboter herstellen."
-        except:
-            msg = "Konnte keine Verbindung zum Roboter herstellen."
-
+        except ValetudoRequestError:
+            msg = "Der Roboter konnte das leider nicht ausführen"
 
         if msg is not None:
             # if need to speak the execution result by tts
             hermes.publish_start_session_notification(intent_message.site_id, msg, "")
-
-
-
-
 
     # --> Master callback function, triggered everytime an intent is recognized
     def master_intent_callback(self,hermes, intent_message):
@@ -191,13 +176,6 @@ class SnipsMiRobot(object):
     def start_blocking(self):
         with Hermes(MQTT_ADDR) as h:
             h.subscribe_intents(self.master_intent_callback).start()
-
-
-    def getVacuum(self):
-        if VACUUM is None:
-            VACUUM = Vacuum(IP, TOKEN, 0, 0)
-        return VACUUM
-
 
 
 if __name__ == "__main__":
